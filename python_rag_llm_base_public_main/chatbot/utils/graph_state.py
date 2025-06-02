@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 from typing_extensions import TypedDict
 
 
@@ -16,8 +16,17 @@ class GraphState(TypedDict, total=False):
     """
 
     question: str
+    # answers: List[str]
     generation: str
     documents: List[str]
     iteration: int
-    results: List[Dict[str, any]]
+    results: List[Dict[str, Any]]
     confidence: str
+    reliable: bool
+    validation_checks: List[Dict[str, Any]] 
+    false_details_summary: List[str]
+    
+    error_reason: str
+    issue_detected: bool
+    original_question: str  # nếu bạn cũng cần giữ nguyên câu hỏi gốc
+    insights: List[str]

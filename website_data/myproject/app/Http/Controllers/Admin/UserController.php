@@ -30,8 +30,17 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        User::create($request->all());
-        return redirect()->route('admin.users.index');
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+    
+        $validated['password'] = bcrypt($validated['password']); // Hash password
+    
+        User::create($validated);
+    
+        return redirect()->route('admin.users.index')->with('success', 'Thêm user thành công!');
     }
 
     /**
@@ -55,8 +64,21 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        $user->update($request->all());
-        return redirect()->route('admin.users.index');
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:6|confirmed',
+        ]);
+    
+        if (!empty($validated['password'])) {
+            $validated['password'] = bcrypt($validated['password']);
+        } else {
+            unset($validated['password']); // Không cập nhật nếu trống
+        }
+    
+        $user->update($validated);
+    
+        return redirect()->route('admin.users.index')->with('success', 'Cập nhật user thành công!');
     }
 
     /**
@@ -66,5 +88,13 @@ class UserController extends Controller
     {
         $user->delete();
         return redirect()->route('admin.users.index');
+    }
+
+    public function getRemainingQuestions(Request $request)
+    {
+        $user = $request->user(); // Lấy user từ token
+        return response()->json([
+            'remaining' => $user->remaining_questions
+        ]);
     }
 }

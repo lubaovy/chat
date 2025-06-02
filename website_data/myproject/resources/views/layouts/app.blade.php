@@ -7,11 +7,33 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <!-- <title>{{ config('app.name', 'Laravel') }}</title> -->
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
+
+    <!-- Metadata SEO -->
+    <title>{{ $settings->site_title ?? 'Chatbot Lịch Sử Việt Nam' }}</title>
+    <meta name="description" content="{{ $settings->meta_description ?? 'Trợ lý lịch sử chính xác, xác thực' }}">
+    <meta name="keywords" content="{{ $settings->meta_keywords ?? 'chatbot lịch sử, lịch sử Việt Nam, AI giáo dục' }}">
+    <meta name="author" content="Nhóm phát triển Chatbot Lịch Sử">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ asset($settings->favicon ?? 'favicon.ico') }}" />
+
+    <!-- Open Graph (Facebook, Zalo...) -->
+    <meta property="og:title" content="{{ $settings->site_title ?? 'Chatbot Lịch Sử Việt Nam' }}" />
+    <meta property="og:description" content="AI hỗ trợ học lịch sử Việt Nam chính xác, có kiểm chứng." />
+    <meta property="og:image" content="{{ asset($settings->og_image ?? 'images/share.jpg') }}" />
+    <meta property="og:url" content="{{ url()->current() }}" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Chatbot Lịch Sử Việt Nam" />
+    <meta name="twitter:description" content="Chatbot AI giúp bạn học và hiểu lịch sử một cách đúng đắn." />
+    <meta name="twitter:image" content="{{ asset('images/share.jpg') }}" />
 
     <!-- Scripts -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])

@@ -1,7 +1,7 @@
 from langchain_openai import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from python_rag_llm_base_public_main.app.config import settings
-
 
 class ServiceManager:
     """

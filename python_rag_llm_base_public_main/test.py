@@ -1,7 +1,6 @@
-import faiss
+from python_rag_llm_base_public_main.chatbot.utils.llm import LLM 
 
-# Load FAISS index
-index = faiss.read_index("python_rag_llm_base_public_main/demo/data_vector/index.faiss")
+llm = LLM()
 
-# Kiểm tra số chiều
-print("Số chiều của FAISS index:", index.d)
+print("Model đang dùng:", llm.model_name)
+print("API KEY đang dùng:", llm.api_key)

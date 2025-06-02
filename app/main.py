@@ -26,5 +26,5 @@ app.include_router(file_upload.router)
 
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to my FastAPI application"}
+async def root():
+    return {"message": "Welcome to the Chatbot API"}

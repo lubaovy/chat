@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.log
+.venv/
+.git/
+node_modules/
+.env
+python_rag_llm_base_public_main/.vscode/
+python_rag_llm_base_public_main/.venv/
+python_rag_llm_base_public_main/__pycache__/
+.vscode/
+.idea/
+website_data/

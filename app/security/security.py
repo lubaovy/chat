@@ -21,5 +21,5 @@ async def get_api_key(api_key_header_value: str = Security(api_key_header)):
     raise HTTPException(status_code=403, detail="Could not validate API Key")
 
 
-print(f"Received API Key: {api_key_header}")
-print(f"Expected API Key: {settings.API_KEY}")
+# print(f"Received API Key: {api_key_header}")
+# print(f"Expected API Key: {settings.API_KEY}")

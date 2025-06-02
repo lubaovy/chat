@@ -11,7 +11,7 @@ class Retriever:
         faiss_fetch_k (int): Số lượng document tối đa được lấy trước khi lọc.
     """
 
-    def __init__(self, embedding_model_name: str, faiss_fetch_k: int = 20):
+    def __init__(self, embedding_model_name: str, faiss_fetch_k: int = 100):
         """
         Khởi tạo lớp Retriever với mô hình embedding.
 
@@ -45,7 +45,7 @@ class Retriever:
         faiss_retriever = self.retriever.as_retriever()
         return faiss_retriever
 
-    def get_documents(self, query: str, num_doc: int = 5):
+    def get_documents(self, query: str, num_doc: int = 10):
         """
         Nhận vào câu hỏi và trả về danh sách các document liên quan.
 
