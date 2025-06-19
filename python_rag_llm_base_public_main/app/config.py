@@ -23,6 +23,8 @@ class Settings:
     LLM_NAME = os.environ["NUM_DOC"]
     
     OPENAI_LLM = os.environ["OPENAI_LLM"]
+    
+    GOOGLE_LLM = os.environ["GOOGLE_LLM"]
 
 # Tạo một thể hiện của lớp Settings để sử dụng trong ứng dụng
 settings = Settings()

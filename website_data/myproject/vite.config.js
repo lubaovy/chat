@@ -25,4 +25,14 @@ export default defineConfig({
             vue: 'vue/dist/vue.esm-bundler.js',
         },
     },
+     // ✅ Thêm phần này để xử lý lỗi CORS
+    server: {
+        cors: {
+            origin: 'http://ai-lichsu.com',  // domain frontend được phép
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization'],
+        },
+        host: 'localhost', // ⚠️ Tránh dùng [::1]
+        port: 5173,
+    },
 });

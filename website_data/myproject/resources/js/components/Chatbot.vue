@@ -58,7 +58,7 @@
           </div>
 
           <!-- BOT -->
-          <div v-else>
+          <div v-else >
             <!-- Nếu phát hiện lỗi logic -->
             <div v-if="msg.issue_detected" style="margin-top: 12px;">
               <p><strong>Câu hỏi "{{ msg.original_question }}" có thể chưa chính xác hoặc chứa lỗi logic.</strong></p>
@@ -69,13 +69,17 @@
               </div>
 
               <div v-if="msg.enriched_question" style="margin-top: 8px;">
-                <p><strong>Câu hỏi đúng nên là:</strong></p>
+                <p><strong>Có thể bạn muốn hỏi:</strong></p>
                 <p style="margin-left: 16px;">{{ msg.enriched_question }}</p>
               </div>
             </div>
 
             <!-- Trả lời chính -->
-            <div v-html="msg.text" style="margin-top: 10px;"></div>
+            <div v-html="renderAnswerWithLinks(msg)" @click="handleCitationClick"></div>
+
+            <div v-if="msg.has_failed_validation" style="margin-top: 12px;">
+              <p><strong>Câu hỏi có thể chưa chính xác, xem chi tiết lỗi ở Xem chi tiết các lần kiểm tra.</strong></p>
+            </div>
 
             <div v-if="!msg.text.startsWith('❌')">
               <!-- Độ tin cậy -->
@@ -132,6 +136,14 @@
           </div>
         </div>
 
+        <!-- POPUP hiện tài liệu khi click trích dẫn -->
+        <div v-if="showingCitation" class="popup-overlay">
+          <div class="popup-box" style="max-width: 600px; text-align: left">
+            <h3>Tài liệu tham khảo (tr. {{ activeCitation?.page || '?' }})</h3>
+            <pre style="white-space: pre-wrap">{{ highlightedContent }}</pre>
+            <button class="popup-close" @click="showingCitation = false">Đóng</button>
+          </div>
+        </div>
 
         <div v-if="isLoading" class="msg bot loading">
           <span class="dot"></span>
@@ -194,6 +206,9 @@ export default {
         actionText: "",
         actionUrl: "",
       },
+      showingCitation: false,
+      activeCitation: null,
+      highlightedContent: "",
     };
   },
 
@@ -211,6 +226,49 @@ export default {
   },  
 
   methods: {
+    // 1️⃣ RENDER LINK TRONG CÂU TRẢ LỜI
+    renderAnswerWithLinks(msg) {
+      let html = msg.text;
+      if (msg.citations && msg.citations.length) {
+        msg.citations.forEach((citation, idx) => {
+          const pattern = citation.matched_text?.slice(0, 30); // dùng phần đầu đoạn trích
+          if (!pattern) return;
+          const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(escaped, "i");
+          html = html.replace(regex, match => {
+            return `<a href="#" class="citation-link" data-docid="${citation.doc_id}" data-index="${idx}">${match}</a>`;
+          });
+        });
+      }
+      return html;
+    },
+
+    // 2️⃣ XỬ LÝ CLICK LINK
+    handleCitationClick(e) {
+      const el = e.target;
+      if (!el.classList.contains("citation-link")) return;
+
+      const docId = el.getAttribute("data-docid");
+      const idx = el.getAttribute("data-index");
+      const msg = this.messages.find(m => m.citations);
+      const citation = msg?.citations?.[idx];
+
+      const matchedDoc = msg?.documents?.find(doc => doc.metadata?.doc_id === docId);
+
+      if (matchedDoc) {
+        this.activeCitation = citation;
+        const fullText = matchedDoc.page_content || "";
+        const highlight = citation.matched_text || "";
+
+        const escaped = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const reg = new RegExp(`(${escaped})`, "gi");
+        this.highlightedContent = fullText.replace(reg, '<mark>$1</mark>');
+        this.showingCitation = true;
+      } else {
+        alert("Không tìm thấy tài liệu cho trích dẫn này.");
+      }
+    },
+
     toggleMenu(index) {
       this.menuVisible = this.menuVisible === index ? null : index; // Toggle menu cho cuộc trò chuyện
     },
@@ -261,7 +319,8 @@ export default {
           { question: userMsg },
           {
             withCredentials: true,
-            headers
+            headers,
+            timeout: 90000
           }
         );
         this.remainingQuestions = response.data.remaining;
@@ -285,11 +344,14 @@ export default {
           error_reason,
           issue_detected,
           original_question,
-          question: enriched_question
+          enriched_question,
+          has_failed_validation
         } = response.data.answer;
 
         const botMsg = {
-          text: marked.parse(generation),
+          text: typeof generation === 'string'
+            ? marked.parse(generation)
+            : "❌ Lỗi: Không thể hiển thị câu trả lời do dữ liệu không hợp lệ.",
           documents: documents.map(doc => doc.page_content),
           reliable,
           validation_checks,
@@ -298,6 +360,7 @@ export default {
           issue_detected,
           original_question,
           enriched_question,
+          has_failed_validation,
           sender: "bot"
         };
 
@@ -314,8 +377,11 @@ export default {
             actionUrl: data.action?.url || "/login",
           };
         } else {
+          const errorMessage = err?.message || 'Đã xảy ra lỗi không xác định.';
+          console.error('Chi tiết lỗi:', err);
+
           this.chatHistory[this.selectedChat].messages.push({
-            text: "❌ Lỗi: không thể gửi câu hỏi.",
+            text: `❌ Lỗi: không thể gửi câu hỏi. (${errorMessage})`,
             sender: "bot",
           });
         }
@@ -369,22 +435,31 @@ export default {
 
 * {
   font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .container {
   display: flex;
-  height: 97vh;
+  height: 100vh;
   background: #f4f6f9; /* Nền nhẹ nhàng, dễ nhìn */
   font-family: sans-serif;
 }
 
 /* Sidebar */
 .sidebar {
-  width: 250px;
+  width: 280px;
   background: rgb(255, 255, 255);
-  border-right: 2px solid #e0dcdc;  
-  padding: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid #e0dcdc;  
+  padding: 20px 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   transition: all 0.3s ease-in-out;
   transform-origin: left center;
   animation: slideIn 0.5s ease-out;
@@ -396,7 +471,8 @@ export default {
 }
 
 .sidebar h3 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
+  padding: 0 10px;
   font-weight: 600;
   margin-bottom: 20px;
   text-align: center;
@@ -422,7 +498,7 @@ export default {
   color: #fff;
   border: none;
   border-radius: 8px;
-  margin-bottom: 16px;
+  margin: 0 0 20px 0;
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.3s ease;
@@ -435,6 +511,8 @@ export default {
 .sidebar ul {
   list-style: none;
   padding: 0;
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
 .sidebar li {
@@ -478,10 +556,8 @@ export default {
   display: flex;
   flex-direction: column;
   background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   position: relative;
+  overflow: hidden;
 }
 
 /* Chat header */
@@ -525,7 +601,7 @@ export default {
   flex-direction: column; 
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 20px 25px;
   padding-bottom: 80px; /* Chừa chỗ cho chat-input */
 }
 
@@ -586,25 +662,28 @@ export default {
 
 /* Tin nhắn */
 .msg {
-  max-width: 80%;
-  padding: 12px 16px;
+  max-width: 75%; /* Tăng từ 80% lên 90% */
+  width: 100%;
+  padding: 16px 20px;
   border-radius: 12px;
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 16px;
   background: #f3f4f6;
-  margin-bottom: 10px;
 }
 
 .msg.user {
   align-self: flex-end;
   background: rgb(247, 246, 246);
+  max-width: 70%;
 }
 
 .msg.bot {
   align-self: flex-start;
-  background:rgb(247, 246, 246);
-  border: 1px solid #ddd;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  max-width: 70%;
+  margin: 12px auto;
+  padding: 0;
 }
 
 /* Loading dots */
@@ -635,20 +714,14 @@ export default {
 /* Chat input */
 .chat-input {
   display: flex;
-  position: fixed; /* Giữ chat-input cố định ở dưới cùng */
-  bottom: 0;
-  width: 73%;
-  padding: 14px;
-  border-top: 1px solid #ddd;
-  background: #fafafa;
-  border-radius: 20px; /* Bo tròn phần trên của chat-input */
-  box-sizing: border-box; /* Đảm bảo padding không làm thay đổi kích thước tổng thể */
+  padding: 15px 25px;
+  background: #fff;
 }
 
 .chat-input input {
   flex: 1;
-  padding: 12px;
-  border: 2px solid #ccc;
+  padding: 12px 15px;
+  border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
@@ -660,7 +733,7 @@ export default {
 
 .chat-input button {
   margin-left: 12px;
-  padding: 12px 18px;
+  padding: 12px 20px;
   background:rgb(255, 233, 124);
   color: #fff;
   border: none;
@@ -688,7 +761,7 @@ export default {
 }
 
 .menu-options {
-  width: 80px;
+  width: 90px;
   position: absolute;
   top: 100%;
   right: 0;
@@ -804,6 +877,16 @@ export default {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+.citation-link {
+  color: #cc0000;
+  text-decoration: underline;
+  cursor: pointer;
+}
+mark {
+  background: yellow;
+  font-weight: bold;
 }
 
 </style>

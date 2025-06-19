@@ -15,6 +15,6 @@ async def ask_question(
     api_key: str = Depends(get_api_key)
 ):
     question = request.question
-    # response = get_bot_response(question)  # Gọi chatbot
-    response = await run_in_threadpool(get_bot_response, question)
+    response = await get_bot_response(question)  # Gọi chatbot
+    # response = await run_in_threadpool(get_bot_response, question)
     return {"answer": response}  # Trả về kết quả

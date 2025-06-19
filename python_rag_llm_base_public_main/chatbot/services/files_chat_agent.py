@@ -17,7 +17,6 @@ class FilesChatAgent:
     def __init__(self, path_vector_store: str) -> None:
         self.retriever = Retriever(settings.LLM_NAME).set_retriever(path_vector_store)
         self.llm = LLM().get_llm(settings.LLM_NAME)
-        print(f"[DEBUG] ✅ LLM đã load: {self.llm}")
         self.document_grader = DocumentGrader(self.llm)
         self.answer_generator = AnswerGenerator(self.llm)
         self.no_answer_handler = NoAnswerHandler(self.llm)
@@ -28,11 +27,16 @@ class FilesChatAgent:
         processed = self.question_handler.process(original_question)
         print(f"[PROCESSED RESULT]: {processed}")
         enriched_question = processed["enriched_question"]
+        analysis = processed["analysis"]
         insights = processed["insights"]
         error_reason = processed.get("error_reason", "")
         issue_detected = processed.get("issue_detected", False)
+        
+        dynamic_k = self.question_handler.analyzer.infer_top_k(analysis)
+        print(f"[RETRIEVER] ✅ Dynamic top-k = {dynamic_k} cho câu hỏi: {original_question}")
 
-        documents = self.retriever.get_documents(enriched_question, int(settings.NUM_DOC))
+
+        documents = self.retriever.get_documents(enriched_question, dynamic_k)
 
         return {
             "documents": documents,
@@ -89,7 +93,7 @@ class FilesChatAgent:
 
         original_answer = state["generation"]
         current_answer = original_answer
-        max_iterations = 5
+        max_iterations = 3
 
         all_validation_checks = []
         all_false_details = set()

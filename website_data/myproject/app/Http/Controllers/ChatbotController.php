@@ -13,6 +13,7 @@ class ChatbotController extends Controller
 {
     public function ask(Request $request)
     {
+        ini_set('max_execution_time', 360); 
         $user = $request->user();
 
         // Nếu chưa đăng nhập → lỗi
@@ -72,7 +73,7 @@ class ChatbotController extends Controller
                 ->withHeaders([
                     'API-Key' => env('API_KEY', 'Lk13bVFH1eyy0pz1LBpgmt4iUNDYQAY6'),
                 ])
-                ->post('http://127.0.0.1:55013/chatbot/ask/', [
+                ->post('http://127.0.0.1:8001/chatbot/ask/', [
                     'question' => $question,
                 ]);
 
@@ -86,7 +87,7 @@ class ChatbotController extends Controller
                     'reliable' => false,
                     'validation_checks' => [],
                     'false_details_summary' => [],
-                    'error_reason' => $e->getMessage(),
+                    'error_reason' => $e->getMessage(), 
                     'issue_detected' => true,
                     'original_question' => $question,
                     'enriched_question' => null,

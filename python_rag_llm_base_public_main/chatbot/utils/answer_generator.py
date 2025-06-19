@@ -2,7 +2,7 @@ from python_rag_llm_base_public_main.chatbot.utils.custom_prompt import CustomPr
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableSequence
 from langchain_core.output_parsers import StrOutputParser
-
+import json
 
 class AnswerGenerator:
     """
@@ -24,10 +24,11 @@ class AnswerGenerator:
                 ("system", CustomPrompt.GENERATE_ANSWER_PROMPT),
                 ("human", " User question: {question} \n\n Context: {context}"),
             ]
-        )
+        )   
 
         # Xây dựng pipeline xử lý: nhận prompt -> xử lý với LLM -> trích xuất kết quả dạng chuỗi
         self.chain = prompt | llm | StrOutputParser()
+        self.llm = llm  # giữ lại nếu cần gọi ainvoke
 
     def get_chain(self) -> RunnableSequence:
         """
@@ -37,3 +38,31 @@ class AnswerGenerator:
             RunnableSequence: Chuỗi thực thi pipeline xử lý câu hỏi.
         """
         return self.chain
+# from python_rag_llm_base_public_main.chatbot.utils.external_llm_wrapper import OpenRouterWrapper
+
+# class AnswerGenerator:
+#     def __init__(self, llm=None):
+#         self.llm = OpenRouterWrapper(api_key="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")
+
+#     def get_chain(self):
+#         class SimpleChain:
+#             def __init__(self, llm):
+#                 self.llm = llm
+
+#             async def ainvoke(self, inputs):
+#                 prompt = f"""Trả lời câu hỏi dựa trên tài liệu sau:
+# Trả lời bằng **TIẾNG VIỆT**
+
+# ---CÂU HỎI---
+# {inputs['question']}
+
+# ---TÀI LIỆU---
+# {inputs['context']}
+
+# """
+#                 return await self.llm.ainvoke(prompt)
+
+#         return SimpleChain(self.llm)
+
+    
+    

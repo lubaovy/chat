@@ -6,6 +6,7 @@
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}" defer></script>
+
 </head>
 <body class="hold-transition sidebar-mini">
     <div class="wrapper">

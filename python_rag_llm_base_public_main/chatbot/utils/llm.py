@@ -1,5 +1,6 @@
 from langchain_openai import ChatOpenAI  # Import API của OpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI  # Import API của Google Gemini
+from python_rag_llm_base_public_main.chatbot.utils.external_llm_wrapper import OpenRouterWrapper
 from python_rag_llm_base_public_main.app.config import settings  # Import cấu hình API từ file settings
 import requests
 
@@ -56,6 +57,7 @@ class LLM:
 
         self.model_name = setting[0]  # Lấy model_name từ tuple
         self.api_key = setting[1]     # Lấy api_key từ tuple
+
     def open_ai(self):
         """
         Khởi tạo mô hình OpenAI sử dụng API Key từ settings.
@@ -93,6 +95,22 @@ class LLM:
             model=settings.GOOGLE_LLM,
             temperature=self.temperature,
         )
+    
+    def claude(self):
+        # Claude thông qua OpenRouter
+        return OpenRouterWrapper(
+            api_key=self.api_key,
+            model="anthropic/claude-3-haiku",
+        )
+        
+    def deepseek(self):
+        """
+        Khởi tạo mô hình DeepSeek thông qua OpenRouter.
+        """
+        return OpenRouterWrapper(
+            api_key=self.api_key,
+            model="deepseek-ai/deepseek-llm-67b-chat",  # Hoặc deepseek-chat nếu bạn muốn nhẹ hơn
+        )
 
     def get_llm(self, llm_name: str):
         """
@@ -104,9 +122,14 @@ class LLM:
         Returns:
             ChatOpenAI hoặc ChatGoogleGenerativeAI: Đối tượng mô hình tương ứng.
         """
+        print(f"[LLM] Sử dụng mô hình: {llm_name}")
         if llm_name == "openai":
             return self.open_ai()
         elif llm_name == "gemini":
             return self.gemini()
+        elif llm_name == "claude":
+            return self.claude()
+        elif llm_name == "deepseek":
+            return self.deepseek()
         else:
             return self.open_ai()  # Mặc định sử dụng OpenAI nếu không có tên hợp lệ
