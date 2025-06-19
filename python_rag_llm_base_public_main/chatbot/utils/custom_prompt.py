@@ -73,7 +73,7 @@ class CustomPrompt:
 
     3. 🧩 **Cấu trúc câu trả lời phải rõ ràng, đầy đủ và phân tích sâu**:
 
-    **a. Mở đầu**  
+    **a. Phần đầu**  
     - Trình bày rõ ràng vấn đề được hỏi.  
     - Nếu phù hợp, đưa thêm bối cảnh lịch sử liên quan để định vị vấn đề.  
 
@@ -98,9 +98,12 @@ class CustomPrompt:
     5. 📎 **Trích dẫn tài liệu**  
     - **Không chỉ ghi tên nguồn.**
     - **Phải trích dẫn nguyên văn toàn bộ nội dung đã dùng làm cơ sở lập luận.**
+    - Mỗi đoạn trích dẫn cần được đánh dấu rõ ràng bằng định danh tài liệu tương ứng theo cú pháp `[[docX]]`, ví dụ: `[[doc0]]`, `[[doc1]]`.
+    - Định danh này dùng để ánh xạ ngược với danh sách tài liệu đã truy xuất, giúp người dùng xem được nội dung gốc.
     - Đặt trích dẫn sau mỗi luận điểm phân tích.
     - KHÔNG tóm tắt, KHÔNG lược bỏ câu chữ trong phần trích.
-    - **Mỗi trích dẫn phải ghi rõ tên tài liệu và số trang**, ví dụ: *(Lịch sử Việt Nam tập 2, tr. 123)*  
+    - **Mỗi trích dẫn phải ghi rõ tên tài liệu và số trang**, ví dụ: *(Lịch sử Việt Nam tập 2, tr. 123)* `[[doc3]]` 
+    - **Nếu có thông tin tên tài liệu và số trang, bạn vẫn cần ghi rõ, ví dụ:** *(Lịch sử Việt Nam tập 2, tr. 123)* `[[doc3]]`
     - **Phải trích dẫn nguyên văn đầy đủ** đúng theo nội dung được sử dụng làm lập luận.  
     - KHÔNG viết chung chung như “(trích từ tài liệu)” hoặc “(nguồn: tài liệu)” – bắt buộc ghi cụ thể.  
     - Đặt trích dẫn sau mỗi đoạn phân tích, không gộp chung cuối cùng.

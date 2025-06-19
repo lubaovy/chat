@@ -18,6 +18,8 @@ class GeneratorAgent:
         # dynamic_k = self.question_handler.analyzer.infer_top_k(analysis)
         
         documents = self.retriever.get_documents(enriched_question, num_doc=30)
+        doc_map = {f"doc{i}": doc for i, doc in enumerate(documents)}
+
         if not documents:
             return {"generation": None,
                     "documents": [],
@@ -27,12 +29,21 @@ class GeneratorAgent:
                     "issue_detected": processed.get("issue_detected", False)
                 }
 
-        context = "\n\n".join(doc.page_content for doc in documents)
+        # context = "\n\n".join(doc.page_content for doc in documents)
+        # Tạo context kèm doc_id (nếu bạn muốn LLM thấy doc_id)
+        context = "\n\n".join(f"[doc{i}] {doc.page_content}" for i, doc in enumerate(documents))
         generation = await self.answer_generator.get_chain().ainvoke({"question": enriched_question, "context": context})
+        
+        # Gắn doc_id để client có thể hiện lên
+        docs_output = [
+            {"doc_id": f"doc{i}", "page_content": doc.page_content} for i, doc in enumerate(documents)
+        ]
+
 
         return {
             "generation": generation,
-            "documents": [{"page_content": doc.page_content} for doc in documents],
+            # "documents": [{"page_content": doc.page_content} for doc in documents],
+            "documents": docs_output,
             "enriched_question": enriched_question,
             "insights": insights,
             "analysis": analysis,

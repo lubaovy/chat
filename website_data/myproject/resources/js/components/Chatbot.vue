@@ -78,7 +78,7 @@
             <div v-html="renderAnswerWithLinks(msg)" @click="handleCitationClick"></div>
 
             <div v-if="msg.has_failed_validation" style="margin-top: 12px;">
-              <p><strong>Câu hỏi có thể chưa chính xác, xem chi tiết lỗi ở Xem chi tiết các lần kiểm tra.</strong></p>
+              <p><strong>⚠️ Câu trả lời có thể chưa chính xác, xem chi tiết ở Xem chi tiết các lần kiểm tra.</strong></p>
             </div>
 
             <div v-if="!msg.text.startsWith('❌')">
@@ -226,48 +226,39 @@ export default {
   },  
 
   methods: {
-    // 1️⃣ RENDER LINK TRONG CÂU TRẢ LỜI
     renderAnswerWithLinks(msg) {
       let html = msg.text;
-      if (msg.citations && msg.citations.length) {
-        msg.citations.forEach((citation, idx) => {
-          const pattern = citation.matched_text?.slice(0, 30); // dùng phần đầu đoạn trích
-          if (!pattern) return;
-          const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp(escaped, "i");
-          html = html.replace(regex, match => {
-            return `<a href="#" class="citation-link" data-docid="${citation.doc_id}" data-index="${idx}">${match}</a>`;
-          });
-        });
-      }
+      // Tìm tất cả trích dẫn [[doc1]], [[doc2, tr. 344]], v.v.
+      html = html.replace(/\[\[doc(\d+)(?:, tr\.?\s*(\d+))?\]\]/gi, (match, docNum, pageNum) => {
+        return `<a href="#" class="citation-link" data-docindex="${docNum}" data-page="${pageNum || ''}">${match}</a>`;
+      });
       return html;
     },
 
-    // 2️⃣ XỬ LÝ CLICK LINK
+    // XỬ LÝ CLICK LINK
     handleCitationClick(e) {
       const el = e.target;
       if (!el.classList.contains("citation-link")) return;
 
-      const docId = el.getAttribute("data-docid");
-      const idx = el.getAttribute("data-index");
-      const msg = this.messages.find(m => m.citations);
-      const citation = msg?.citations?.[idx];
+      const docIndex = parseInt(el.getAttribute("data-docindex"));
+      const page = el.getAttribute("data-page");
 
-      const matchedDoc = msg?.documents?.find(doc => doc.metadata?.doc_id === docId);
+      const msg = this.messages.find(m => m.documents?.[docIndex]);
+
+      const matchedDoc = msg?.documents?.[docIndex];
 
       if (matchedDoc) {
-        this.activeCitation = citation;
+        this.activeCitation = { page: page || "?" };
         const fullText = matchedDoc.page_content || "";
-        const highlight = citation.matched_text || "";
 
-        const escaped = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const reg = new RegExp(`(${escaped})`, "gi");
-        this.highlightedContent = fullText.replace(reg, '<mark>$1</mark>');
+        // Không có đoạn matched_text nên không highlight cụ thể, có thể để nguyên
+        this.highlightedContent = fullText;
         this.showingCitation = true;
       } else {
         alert("Không tìm thấy tài liệu cho trích dẫn này.");
       }
     },
+
 
     toggleMenu(index) {
       this.menuVisible = this.menuVisible === index ? null : index; // Toggle menu cho cuộc trò chuyện

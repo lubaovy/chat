@@ -7,7 +7,7 @@ class VerifierAgent:
         self.retriever = Retriever(settings.LLM_NAME).set_retriever(path_vector_store)
         self.llm = llm
 
-    async def run(self, enriched_question: str, initial_answer: str, initial_docs: list, max_iterations: int = 5):
+    async def run(self, enriched_question: str, initial_answer: str, initial_docs: list, max_iterations: int = 3):
         import re
 
         validation_checks = []
