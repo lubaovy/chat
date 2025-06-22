@@ -133,9 +133,9 @@ class SmartQuestionHandler:
                 "top_k": top_k  
             }
 
-        enriched = self.enricher.enrich(question)
+        # enriched = self.enricher.enrich(question)
         return {
-            "enriched_question": enriched,
+            "enriched_question": question,
             "issue_detected": False,
             "issues": [],
             "insights": analysis.get("insights", []),

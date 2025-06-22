@@ -78,7 +78,7 @@
             <div v-html="renderAnswerWithLinks(msg)" @click="handleCitationClick"></div>
 
             <div v-if="msg.has_failed_validation" style="margin-top: 12px;">
-              <p><strong>⚠️ Câu trả lời có thể chưa chính xác, xem chi tiết ở Xem chi tiết các lần kiểm tra.</strong></p>
+              <p><strong>⚠️ Câu trả lời có thể chưa chính xác hoặc có chi tiết cần xác thực thêm, xem chi tiết ở Xem chi tiết các lần kiểm tra.</strong></p>
             </div>
 
             <div v-if="!msg.text.startsWith('❌')">
@@ -96,21 +96,6 @@
                 </ul>
               </div>
 
-              <!-- Tài liệu -->
-              <div v-if="msg.documents?.length" style="margin-top: 8px;">
-                <details :open="isOpen">
-                  <summary @click="toggleOpen" style="cursor: pointer;">📂 Xem tài liệu tham khảo</summary>
-                  <ul style="margin-top: 8px;">
-                    <li v-for="(doc, i) in msg.documents" :key="i" style="margin-left: 16px; margin-bottom: 8px;">
-                      <div v-html="doc"></div>
-                    </li>
-                  </ul>
-                  <button @click="isOpen = false" style="margin-top: 10px;">🔽 Thu gọn</button>
-                </details>
-              </div>
-              <div v-else style="margin-top: 8px;">
-                <p><strong>Tài liệu tham khảo:</strong> Không rõ</p>
-              </div>
             </div>
 
             <!-- Hiển thị các lần kiểm tra (validation checks) -->
@@ -118,14 +103,12 @@
               <details>
                 <summary>📋 Xem chi tiết các lần kiểm tra</summary>
                 <ul>
-                  <li v-for="check in msg.validation_checks" :key="check.run" style="margin-bottom: 10px;">
-                    <p><strong>Lần {{ check.run }}:</strong>
+                  <li v-for="check in msg.validation_checks" :key="check.iteration" style="margin-bottom: 10px;">
+                    <p><strong>Lần {{ check.iteration }}:</strong>
                       <span :style="{ color: check.passed ? 'green' : 'red' }">
                         {{ check.passed ? '✅ Pass' : '❌ Fail' }}
                       </span>
                     </p>
-                    <p><strong>Prompt:</strong></p>
-                    <pre style="white-space: pre-wrap; background: #f6f6f6; padding: 10px;">{{ check.prompt }}</pre>
                     <p><strong>Phản hồi:</strong></p>
                     <pre style="white-space: pre-wrap; background: #f0f0f0; padding: 10px;">{{ check.response }}</pre>
                   </li>
@@ -138,9 +121,9 @@
 
         <!-- POPUP hiện tài liệu khi click trích dẫn -->
         <div v-if="showingCitation" class="popup-overlay">
-          <div class="popup-box" style="max-width: 600px; text-align: left">
-            <h3>Tài liệu tham khảo (tr. {{ activeCitation?.page || '?' }})</h3>
-            <pre style="white-space: pre-wrap">{{ highlightedContent }}</pre>
+          <div class="popup-box">
+            <h3>Tài liệu tham khảo</h3>
+            <div class="popup-content" v-html="highlightedContent"></div>
             <button class="popup-close" @click="showingCitation = false">Đóng</button>
           </div>
         </div>
@@ -228,9 +211,8 @@ export default {
   methods: {
     renderAnswerWithLinks(msg) {
       let html = msg.text;
-      // Tìm tất cả trích dẫn [[doc1]], [[doc2, tr. 344]], v.v.
-      html = html.replace(/\[\[doc(\d+)(?:, tr\.?\s*(\d+))?\]\]/gi, (match, docNum, pageNum) => {
-        return `<a href="#" class="citation-link" data-docindex="${docNum}" data-page="${pageNum || ''}">${match}</a>`;
+      html = html.replace(/\[\[(doc\d+)(?:, tr\.?\s*(\d+))?\]\]/gi, (match, docId, page) => {
+        return `<a href="#" class="citation-link" data-docid="${docId}" data-page="${page || ''}" data-msgid="${msg.message_id}">${match}</a>`;
       });
       return html;
     },
@@ -240,25 +222,22 @@ export default {
       const el = e.target;
       if (!el.classList.contains("citation-link")) return;
 
-      const docIndex = parseInt(el.getAttribute("data-docindex"));
+      const docId = el.getAttribute("data-docid");
       const page = el.getAttribute("data-page");
+      const msgId = el.getAttribute("data-msgid");
 
-      const msg = this.messages.find(m => m.documents?.[docIndex]);
-
-      const matchedDoc = msg?.documents?.[docIndex];
+      // 🔍 Chỉ tìm tài liệu trong message tương ứng
+      const msg = this.messages.find(m => m.message_id === msgId);
+      const matchedDoc = msg?.documents?.find(d => d.doc_id === docId);
 
       if (matchedDoc) {
         this.activeCitation = { page: page || "?" };
-        const fullText = matchedDoc.page_content || "";
-
-        // Không có đoạn matched_text nên không highlight cụ thể, có thể để nguyên
-        this.highlightedContent = fullText;
+        this.highlightedContent = matchedDoc.page_content || "";
         this.showingCitation = true;
       } else {
         alert("Không tìm thấy tài liệu cho trích dẫn này.");
       }
     },
-
 
     toggleMenu(index) {
       this.menuVisible = this.menuVisible === index ? null : index; // Toggle menu cho cuộc trò chuyện
@@ -340,10 +319,11 @@ export default {
         } = response.data.answer;
 
         const botMsg = {
+          message_id: `msg_${Date.now()}`,
           text: typeof generation === 'string'
             ? marked.parse(generation)
             : "❌ Lỗi: Không thể hiển thị câu trả lời do dữ liệu không hợp lệ.",
-          documents: documents.map(doc => doc.page_content),
+          documents: documents,
           reliable,
           validation_checks,
           false_details_summary,
@@ -803,10 +783,20 @@ html, body {
   border-radius: 12px;
   padding: 24px 32px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  max-width: 400px;
+  max-width: 800px;
   width: 90%;
   text-align: center;
   animation: fadeIn 0.3s ease-out;
+}
+
+.popup-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #222;
 }
 
 /* Tiêu đề popup */
@@ -852,6 +842,7 @@ html, body {
   color: #666;
   font-size: 14px;
   cursor: pointer;
+  padding-top: 15px;
 }
 
 .popup-close:hover {
